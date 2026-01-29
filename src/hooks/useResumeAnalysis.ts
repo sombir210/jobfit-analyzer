@@ -21,21 +21,29 @@ export function useResumeAnalysis(): UseResumeAnalysisReturn {
     setResults(null);
 
     try {
-      // Extract text from resume
+      // 1️⃣ Resume text extract
       const resumeText = await parseResume(file);
 
       if (!resumeText || resumeText.length < 50) {
-        throw new Error('Could not extract enough text from the resume. Please ensure the file is not empty or corrupted.');
+        throw new Error('Resume text extraction failed. File may be empty or unreadable.');
       }
 
-      // Call the edge function
+      // 2️⃣ ENV validation (IMPORTANT)
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error('Supabase environment variables are missing.');
+      }
+
+      // 3️⃣ Call Supabase Edge Function
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-resume`,
+        `${supabaseUrl}/functions/v1/analyze-resume`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${supabaseAnonKey}`,
           },
           body: JSON.stringify({
             resumeText,
@@ -46,20 +54,20 @@ export function useResumeAnalysis(): UseResumeAnalysisReturn {
       );
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Analysis failed with status ${response.status}`);
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || `Analysis failed with status ${response.status}`);
       }
 
       const data: AnalysisResponse = await response.json();
 
       if (!data.success) {
-        throw new Error(data.error || 'Analysis failed');
+        throw new Error(data.error || 'Resume analysis failed.');
       }
 
       setResults(data.results);
     } catch (err) {
       console.error('Resume analysis error:', err);
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      setError(err instanceof Error ? err.message : 'Unexpected error occurred');
     } finally {
       setIsAnalyzing(false);
     }
