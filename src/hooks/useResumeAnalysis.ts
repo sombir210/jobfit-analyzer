@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { parseResume } from '@/lib/resumeParser';
-import type { JobDomain, AnalysisResults, AnalysisResponse } from '@/types/resume';
+import { useState } from "react";
+import { parseResume } from "@/lib/resumeParser";
+import type { JobDomain, AnalysisResults, AnalysisResponse } from "@/types/resume";
 
 interface UseResumeAnalysisReturn {
   isAnalyzing: boolean;
@@ -21,29 +21,31 @@ export function useResumeAnalysis(): UseResumeAnalysisReturn {
     setResults(null);
 
     try {
-      // 1️⃣ Resume text extract
+      // 1️⃣ Extract resume text
       const resumeText = await parseResume(file);
 
       if (!resumeText || resumeText.length < 50) {
-        throw new Error('Resume text extraction failed. File may be empty or unreadable.');
+        throw new Error(
+          "Resume text extraction failed. File may be empty or unreadable."
+        );
       }
 
-      // 2️⃣ ENV validation (IMPORTANT)
+      // 2️⃣ ENV values (CORRECT ONES)
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-      if (!supabaseUrl || !supabaseAnonKey) {
-        throw new Error('Supabase environment variables are missing.');
+      if (!supabaseUrl || !supabaseKey) {
+        throw new Error("Supabase environment variables missing");
       }
 
       // 3️⃣ Call Supabase Edge Function
       const response = await fetch(
         `${supabaseUrl}/functions/v1/analyze-resume`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${supabaseAnonKey}`,
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${supabaseKey}`,
           },
           body: JSON.stringify({
             resumeText,
@@ -55,19 +57,21 @@ export function useResumeAnalysis(): UseResumeAnalysisReturn {
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
-        throw new Error(err.error || `Analysis failed with status ${response.status}`);
+        throw new Error(
+          err.error || `Analysis failed with status ${response.status}`
+        );
       }
 
       const data: AnalysisResponse = await response.json();
 
       if (!data.success) {
-        throw new Error(data.error || 'Resume analysis failed.');
+        throw new Error(data.error || "Resume analysis failed.");
       }
 
       setResults(data.results);
     } catch (err) {
-      console.error('Resume analysis error:', err);
-      setError(err instanceof Error ? err.message : 'Unexpected error occurred');
+      console.error("Resume analysis error:", err);
+      setError(err instanceof Error ? err.message : "Unexpected error occurred");
     } finally {
       setIsAnalyzing(false);
     }

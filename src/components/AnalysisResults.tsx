@@ -57,7 +57,8 @@ export function AnalysisResults({ results, onReset }: AnalysisResultsProps) {
           
           <div className="grid grid-cols-2 gap-4">
             {/* Education */}
-            {results.education.length > 0 && (
+            {results?.education?.length > 0 && (
+
               <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-xl">
                 <GraduationCap className="w-5 h-5 text-primary mt-0.5" />
                 <div>
@@ -118,7 +119,8 @@ export function AnalysisResults({ results, onReset }: AnalysisResultsProps) {
       </motion.div>
 
       {/* Improvement Suggestions */}
-      {results.areasForImprovement && results.areasForImprovement.length > 0 && (
+      {results?.areasForImprovement?.length > 0 && (
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
